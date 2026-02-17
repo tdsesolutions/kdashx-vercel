@@ -11,29 +11,25 @@
         body { background: #0a0a0f; color: #e2e8f0; margin: 0; font-family: system-ui; overflow-x: hidden; }
         .glass-card { background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
         .page { display: none; }
-        .page.active { display: block; }
+        .page.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
         .nav-item:hover { background: rgba(255,255,255,0.05); }
         .nav-item.active { background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
         input, textarea { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.75rem; border-radius: 0.5rem; width: 100%; font-size: 16px; }
         button { transition: all 0.2s; cursor: pointer; }
         .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.1); border-top-color: #60a5fa; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .tab-btn { padding: 0.75rem 1rem; font-size: 0.875rem; border-radius: 0.5rem; }
+        .tab-btn { padding: 0.75rem 1rem; font-size: 0.875rem; border-radius: 0.5rem; background: rgba(255,255,255,0.05); color: #94a3b8; border: none; }
         .tab-btn.active { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
-        @media (max-width: 1023px) { .desktop-sidebar { display: none; } .bottom-nav { display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: rgba(10,10,15,0.95); border-top: 1px solid rgba(255,255,255,0.1); } .main-content { padding-bottom: 80px !important; } }
+        @media (max-width: 1023px) { .desktop-sidebar { display: none; } .bottom-nav { display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: rgba(10,10,15,0.95); border-top: 1px solid rgba(255,255,255,0.1); padding-bottom: env(safe-area-inset-bottom); } .main-content { padding-bottom: 80px !important; } }
         .bottom-nav { display: none; }
     </style>
 </head>
 <body>
     <div id="app"></div>
     <script>
-// RENDER APP IMMEDIATELY - don't wait for Supabase
-document.getElementById('app').innerHTML = renderApp();
-
-// DATA
 let currentPage = 'dashboard';
 let currentSettingsTab = 'skills';
-let isConnected = false;
 let tasks = JSON.parse(localStorage.getItem('kdashx_tasks') || '[]');
 let events = JSON.parse(localStorage.getItem('kdashx_events') || '[]');
 
@@ -42,28 +38,14 @@ const skillsCatalog = [
     {id:"nodejs-backend",name:"Node.js Backend",category:"engineering",risk:"low"},
     {id:"seo-audit",name:"SEO Audit",category:"marketing",risk:"low"},
     {id:"copywriting",name:"Copywriting",category:"marketing",risk:"low"},
-    {id:"deployment",name:"Deployment",category:"ops",risk:"low"},
-    {id:"github-actions",name:"GitHub Actions",category:"ops",risk:"low"},
-    {id:"architecture",name:"Architecture",category:"engineering",risk:"low"},
-    {id:"web-testing",name:"Web Testing",category:"testing",risk:"low"},
-    {id:"marketing",name:"Marketing",category:"marketing",risk:"low"},
-    {id:"content-strategy",name:"Content Strategy",category:"marketing",risk:"low"},
-    {id:"billing",name:"Billing Automation",category:"payments",risk:"medium"},
-    {id:"pci-compliance",name:"PCI Compliance",category:"compliance",risk:"low"},
-    {id:"auth",name:"Auth Patterns",category:"engineering",risk:"low"},
-    {id:"social-content",name:"Social Content",category:"marketing",risk:"low"},
-    {id:"page-cro",name:"Page CRO",category:"marketing",risk:"low"}
+    {id:"deployment",name:"Deployment",category:"ops",risk:"low"}
 ];
 
 const routingRules = [
     {id:1,keyword:"stripe",priority:100,target:"Licensing"},
     {id:2,keyword:"payment",priority:100,target:"Licensing"},
     {id:3,keyword:"website",priority:90,target:"Client Services"},
-    {id:4,keyword:"web app",priority:90,target:"Client Services"},
-    {id:5,keyword:"seo",priority:85,target:"Growth Dept"},
-    {id:6,keyword:"copy",priority:85,target:"Growth Dept"},
-    {id:7,keyword:"deploy",priority:80,target:"Client Services"},
-    {id:8,keyword:"marketing",priority:80,target:"Growth Dept"}
+    {id:4,keyword:"web app",priority:90,target:"Client Services"}
 ];
 
 const agents = [
@@ -89,18 +71,18 @@ function renderSidebar() {
     
     let html = '<aside class="desktop-sidebar fixed left-0 top-0 h-full w-64 glass-card z-50">';
     html += '<div class="p-4 border-b border-white/5"><div class="flex items-center gap-3">';
-    html += '<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">K</div>';
+    html += '<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">K</div>';
     html += '<div><h1 class="font-semibold text-white">K-DashX</h1><p class="text-xs text-slate-500">Command Center</p></div></div></div>';
     html += '<nav class="p-4 space-y-1">';
     items.forEach(item => {
-        html += '<button onclick="navigate(\'' + item.id + '\')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg nav-item text-left ' + (currentPage===item.id?'active':'text-slate-400') + '">';
+        html += '<button onclick="navigate(\'' + item.id + '\')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg nav-item text-left ' + (currentPage===item.id ? 'active' : 'text-slate-400') + '">';
         html += '<i class="fas ' + item.icon + ' w-5"></i><span>' + item.label + '</span></button>';
     });
     html += '</nav></aside>';
     
     html += '<nav class="bottom-nav justify-around items-center py-2 px-4">';
     items.slice(0,5).forEach(item => {
-        html += '<button onclick="navigate(\'' + item.id + '\')" class="flex flex-col items-center gap-1 p-2 rounded-lg ' + (currentPage===item.id?'text-blue-400':'text-slate-500') + '">';
+        html += '<button onclick="navigate(\'' + item.id + '\')" class="flex flex-col items-center gap-1 p-2 rounded-lg ' + (currentPage===item.id ? 'text-blue-400' : 'text-slate-500') + '">';
         html += '<i class="fas ' + item.icon + ' text-xl"></i><span class="text-[10px]">' + item.label.split(' ')[0] + '</span></button>';
     });
     html += '</nav>';
@@ -109,8 +91,8 @@ function renderSidebar() {
 
 function renderHeader() {
     return '<header class="fixed top-0 right-0 left-0 lg:left-64 h-16 glass-card z-40"><div class="h-full flex items-center justify-between px-4">' +
-        '<div class="flex items-center gap-4"><span class="text-green-400 text-sm"><i class="fas fa-circle text-xs mr-2"></i>Claude AI Active</span></div>' +
-        '<button onclick="haltSystem()" class="px-3 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg text-sm">' +
+        '<div class="flex items-center gap-4"><span class="text-green-400 text-sm font-medium"><i class="fas fa-circle text-xs mr-2"></i>Claude AI Active</span></div>' +
+        '<button onclick="haltSystem()" class="px-3 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg text-sm font-medium hover:bg-red-500/20">' +
         '<i class="fas fa-power-off mr-2"></i>Halt</button></div></header>';
 }
 
@@ -119,60 +101,60 @@ function renderDashboard() {
     const completed = tasks.filter(t => t.status === 'completed').length;
     const pending = tasks.filter(t => t.status === 'submitted').length;
     
-    return '<div id="page-dashboard" class="page ' + (currentPage==='dashboard'?'active':'') + '">' +
-        '<h1 class="text-2xl font-bold text-white mb-6">Dashboard</h1>' +
+    return '<div id="page-dashboard" class="page ' + (currentPage==='dashboard' ? 'active' : '') + '">' +
+        '<h1 class="text-2xl lg:text-3xl font-bold text-white mb-6">Dashboard</h1>' +
         '<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">' +
-        '<div class="glass-card p-4"><p class="text-sm text-slate-400">System</p><p class="text-xl font-bold text-green-400">Online</p></div>' +
-        '<div class="glass-card p-4"><p class="text-sm text-slate-400">Active</p><p class="text-xl font-bold text-blue-400">' + executing + '</p></div>' +
-        '<div class="glass-card p-4"><p class="text-sm text-slate-400">Completed</p><p class="text-xl font-bold text-emerald-400">' + completed + '</p></div>' +
-        '<div class="glass-card p-4"><p class="text-sm text-slate-400">Pending</p><p class="text-xl font-bold text-amber-400">' + pending + '</p></div>' +
+        '<div class="glass-card p-4 lg:p-6"><p class="text-sm text-slate-400 mb-1">System</p><p class="text-xl lg:text-2xl font-bold text-green-400">Online</p></div>' +
+        '<div class="glass-card p-4 lg:p-6"><p class="text-sm text-slate-400 mb-1">Active</p><p class="text-xl lg:text-2xl font-bold text-blue-400">' + executing + '</p></div>' +
+        '<div class="glass-card p-4 lg:p-6"><p class="text-sm text-slate-400 mb-1">Completed</p><p class="text-xl lg:text-2xl font-bold text-emerald-400">' + completed + '</p></div>' +
+        '<div class="glass-card p-4 lg:p-6"><p class="text-sm text-slate-400 mb-1">Pending</p><p class="text-xl lg:text-2xl font-bold text-amber-400">' + pending + '</p></div>' +
         '</div>' +
-        '<div class="glass-card"><div class="p-4 border-b border-white/5"><h2 class="text-lg font-semibold text-white">Recent Tasks</h2></div>' +
-        '<div class="divide-y divide-white/5">' + (tasks.length === 0 ? '<div class="p-4 text-center text-slate-500">No tasks yet</div>' : 
-        tasks.slice(0,5).map(t => '<div class="p-4"><div class="flex justify-between"><p class="text-white">' + t.intent.substring(0,50) + '</p><span class="text-xs px-2 py-1 rounded bg-white/10">' + t.status + '</span></div></div>').join('')) +
+        '<div class="glass-card"><div class="p-4 lg:p-6 border-b border-white/5 flex justify-between items-center"><h2 class="text-lg font-semibold text-white">Recent Tasks</h2></div>' +
+        '<div class="divide-y divide-white/5">' + (tasks.length === 0 ? '<div class="p-4 text-center text-slate-500">No tasks yet. Submit one via Intent page.</div>' : 
+        tasks.slice(0,5).map(t => '<div class="p-4"><div class="flex justify-between items-center gap-3"><p class="text-white truncate flex-1">' + t.intent.substring(0,50) + '</p><span class="text-xs px-2 py-1 rounded bg-white/10 flex-shrink-0">' + t.status + '</span></div></div>').join('')) +
         '</div></div></div>';
 }
 
 function renderOrg() {
-    return '<div id="page-org" class="page ' + (currentPage==='org'?'active':'') + '">' +
-        '<h1 class="text-2xl font-bold text-white mb-6">Organization</h1>' +
+    return '<div id="page-org" class="page ' + (currentPage==='org' ? 'active' : '') + '">' +
+        '<h1 class="text-2xl lg:text-3xl font-bold text-white mb-6">Organization</h1>' +
         '<div class="glass-card p-4">' + agents.map(a => 
-            '<div class="p-3 flex items-center gap-3"><i class="fas fa-user text-blue-400"></i><span class="text-white">' + a.name + '</span><span class="text-xs ' + (a.status==='online'?'text-green-400':'text-amber-400') + '">' + a.status + '</span></div>'
+            '<div class="p-3 flex items-center gap-3"><i class="fas fa-user text-blue-400"></i><span class="text-white">' + a.name + '</span><span class="text-xs ' + (a.status==='online' ? 'text-green-400' : 'text-amber-400') + '">' + a.status + '</span></div>'
         ).join('') + '</div></div>';
 }
 
 function renderIntent() {
-    return '<div id="page-intent" class="page ' + (currentPage==='intent'?'active':'') + '">' +
-        '<h1 class="text-2xl font-bold text-white mb-6">Submit Task</h1>' +
+    return '<div id="page-intent" class="page ' + (currentPage==='intent' ? 'active' : '') + '">' +
+        '<h1 class="text-2xl lg:text-3xl font-bold text-white mb-6">Submit Task</h1>' +
         '<div class="max-w-2xl"><form onsubmit="submitTask(event)" class="glass-card p-6">' +
-        '<textarea id="intentInput" placeholder="What do you want to build?" class="h-32 mb-4" required></textarea>' +
-        '<button type="submit" class="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-medium">' +
+        '<textarea id="intentInput" placeholder="What do you want to build? (e.g., Build Stripe checkout, Create landing page...)" class="h-32 mb-4" required></textarea>' +
+        '<button type="submit" class="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-medium hover:opacity-90 transition-opacity">' +
         '<i class="fas fa-paper-plane mr-2"></i>Submit to Claude AI</button></form></div></div>';
 }
 
 function renderExecution() {
-    return '<div id="page-execution" class="page ' + (currentPage==='execution'?'active':'') + '">' +
-        '<h1 class="text-2xl font-bold text-white mb-6">Execution</h1>' +
-        '<div class="glass-card"><div class="p-4 border-b border-white/5"><h2 class="text-lg font-semibold text-white">Tasks</h2></div>' +
-        '<div class="divide-y divide-white/5">' + (tasks.length === 0 ? '<div class="p-8 text-center text-slate-500">No tasks submitted</div>' :
-        tasks.map(t => '<div class="p-4"><p class="text-white font-medium">' + t.intent.substring(0,60) + '</p><div class="flex items-center gap-2 mt-2"><span class="text-xs px-2 py-1 rounded bg-white/10 text-slate-300">' + t.status + '</span><span class="text-xs text-slate-400">' + new Date(t.submitted_at).toLocaleString() + '</span></div></div>').join('')) +
+    return '<div id="page-execution" class="page ' + (currentPage==='execution' ? 'active' : '') + '">' +
+        '<h1 class="text-2xl lg:text-3xl font-bold text-white mb-6">Execution</h1>' +
+        '<div class="glass-card"><div class="p-4 lg:p-6 border-b border-white/5"><h2 class="text-lg font-semibold text-white">Tasks</h2></div>' +
+        '<div class="divide-y divide-white/5">' + (tasks.length === 0 ? '<div class="p-8 text-center text-slate-500"><i class="fas fa-folder-open text-4xl mb-3 block"></i>No tasks submitted yet. Go to Intent page to create one.</div>' :
+        tasks.map(t => '<div class="p-4"><p class="text-white font-medium">' + t.intent.substring(0,60) + (t.intent.length > 60 ? '...' : '') + '</p><div class="flex items-center gap-2 mt-2"><span class="text-xs px-2 py-1 rounded bg-white/10 text-slate-300">' + t.status + '</span><span class="text-xs text-slate-400">' + new Date(t.submitted_at).toLocaleString() + '</span></div></div>').join('')) +
         '</div></div></div>';
 }
 
 function renderSettings() {
-    return '<div id="page-settings" class="page ' + (currentPage==='settings'?'active':'') + '">' +
-        '<h1 class="text-2xl font-bold text-white mb-6">Settings</h1>' +
-        '<div class="flex gap-2 mb-6">' +
-        '<button onclick="setTab(\'skills\')" class="tab-btn ' + (currentSettingsTab==='skills'?'active':'') + '">Skills (' + skillsCatalog.length + ')</button>' +
-        '<button onclick="setTab(\'routing\')" class="tab-btn ' + (currentSettingsTab==='routing'?'active':'') + '">Routing (' + routingRules.length + ')</button>' +
+    return '<div id="page-settings" class="page ' + (currentPage==='settings' ? 'active' : '') + '">' +
+        '<h1 class="text-2xl lg:text-3xl font-bold text-white mb-6">Settings</h1>' +
+        '<div class="flex gap-2 mb-6 overflow-x-auto">' +
+        '<button onclick="setTab(\'skills\')" class="tab-btn ' + (currentSettingsTab==='skills' ? 'active' : '') + '">Skills (' + skillsCatalog.length + ')</button>' +
+        '<button onclick="setTab(\'routing\')" class="tab-btn ' + (currentSettingsTab==='routing' ? 'active' : '') + '">Routing (' + routingRules.length + ')</button>' +
         '</div>' +
         '<div class="glass-card p-6">' +
         (currentSettingsTab === 'skills' ? 
             '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">' + skillsCatalog.map(s => 
-                '<div class="p-3 bg-white/5 rounded-lg"><div class="flex justify-between mb-1"><span class="text-white">' + s.name + '</span><span class="text-xs px-2 py-1 rounded ' + (s.risk==='medium'?'bg-amber-500/20 text-amber-400':'bg-green-500/20 text-green-400') + '">' + s.risk + '</span></div><span class="text-xs text-slate-400">' + s.category + '</span></div>'
+                '<div class="p-3 bg-white/5 rounded-lg"><div class="flex justify-between mb-1"><span class="text-white font-medium">' + s.name + '</span><span class="text-xs px-2 py-1 rounded ' + (s.risk==='medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-green-500/20 text-green-400') + '">' + s.risk + '</span></div><span class="text-xs text-slate-400">' + s.category + '</span></div>'
             ).join('') + '</div>' :
             '<div class="space-y-2">' + routingRules.map(r => 
-                '<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg"><span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">' + r.keyword + '</span><i class="fas fa-arrow-right text-slate-500"></i><span class="text-white">' + r.target + '</span><span class="text-xs text-slate-400">P' + r.priority + '</span></div>'
+                '<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg"><span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">' + r.keyword + '</span><i class="fas fa-arrow-right text-slate-500"></i><span class="text-white">' + r.target + '</span><span class="text-xs text-slate-400">P' + r.priority + '</span></div>'
             ).join('') + '</div>') +
         '</div></div>';
 }
@@ -182,7 +164,6 @@ function navigate(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     const pageEl = document.getElementById('page-' + page);
     if (pageEl) pageEl.classList.add('active');
-    render();
 }
 
 function setTab(tab) {
@@ -226,6 +207,7 @@ function routeIntent(intent) {
 function haltSystem() {
     if (confirm('Halt all systems?')) alert('System halted');
 }
-    </script>
-</body>
-</html>
+
+// INITIAL RENDER
+document.getElementById('app').innerHTML = renderApp();
+</script></body></html>
