@@ -8,41 +8,62 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body { background: #0a0a0f; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
+        body { background: #0a0a0f; color: #e2e8f0; margin: 0; font-family: system-ui; overflow-x: hidden; }
         .glass-card { background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
         .page { display: none; }
-        .page.active { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
-        .nav-item { background: transparent; border: none; width: 100%; text-align: left; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.875rem; }
+        .page.active { display: block; }
         .nav-item:hover { background: rgba(255,255,255,0.05); }
         .nav-item.active { background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
-        input, textarea { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.75rem; border-radius: 0.5rem; width: 100%; font-size: 16px; font-family: inherit; }
-        input:focus, textarea:focus { outline: none; border-color: rgba(59,130,246,0.5); }
-        button { transition: all 0.2s; cursor: pointer; border: none; font-family: inherit; }
+        input, textarea { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.75rem; border-radius: 0.5rem; width: 100%; font-size: 16px; }
+        button { transition: all 0.2s; cursor: pointer; }
+        .loading { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.1); border-top-color: #60a5fa; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .tab-btn { padding: 0.75rem 1rem; font-size: 0.875rem; border-radius: 0.5rem; }
+        .tab-btn.active { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+        @media (max-width: 1023px) { .desktop-sidebar { display: none; } .bottom-nav { display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: rgba(10,10,15,0.95); border-top: 1px solid rgba(255,255,255,0.1); } .main-content { padding-bottom: 80px !important; } }
         .bottom-nav { display: none; }
-        @media (max-width: 1023px) { 
-            .desktop-sidebar { display: none; } 
-            .bottom-nav { display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: rgba(10,10,15,0.95); border-top: 1px solid rgba(255,255,255,0.1); padding-bottom: env(safe-area-inset-bottom); } 
-        }
     </style>
 </head>
 <body>
     <div id="app"></div>
     <script>
+// RENDER APP IMMEDIATELY - don't wait for Supabase
+document.getElementById('app').innerHTML = renderApp();
+
 // DATA
+let currentPage = 'dashboard';
+let currentSettingsTab = 'skills';
+let isConnected = false;
+let tasks = JSON.parse(localStorage.getItem('kdashx_tasks') || '[]');
+let events = JSON.parse(localStorage.getItem('kdashx_events') || '[]');
+
 const skillsCatalog = [
     {id:"stripe-integration",name:"Stripe Integration",category:"payments",risk:"medium"},
     {id:"nodejs-backend",name:"Node.js Backend",category:"engineering",risk:"low"},
     {id:"seo-audit",name:"SEO Audit",category:"marketing",risk:"low"},
     {id:"copywriting",name:"Copywriting",category:"marketing",risk:"low"},
-    {id:"deployment",name:"Deployment",category:"ops",risk:"low"}
+    {id:"deployment",name:"Deployment",category:"ops",risk:"low"},
+    {id:"github-actions",name:"GitHub Actions",category:"ops",risk:"low"},
+    {id:"architecture",name:"Architecture",category:"engineering",risk:"low"},
+    {id:"web-testing",name:"Web Testing",category:"testing",risk:"low"},
+    {id:"marketing",name:"Marketing",category:"marketing",risk:"low"},
+    {id:"content-strategy",name:"Content Strategy",category:"marketing",risk:"low"},
+    {id:"billing",name:"Billing Automation",category:"payments",risk:"medium"},
+    {id:"pci-compliance",name:"PCI Compliance",category:"compliance",risk:"low"},
+    {id:"auth",name:"Auth Patterns",category:"engineering",risk:"low"},
+    {id:"social-content",name:"Social Content",category:"marketing",risk:"low"},
+    {id:"page-cro",name:"Page CRO",category:"marketing",risk:"low"}
 ];
 
 const routingRules = [
     {id:1,keyword:"stripe",priority:100,target:"Licensing"},
     {id:2,keyword:"payment",priority:100,target:"Licensing"},
     {id:3,keyword:"website",priority:90,target:"Client Services"},
-    {id:4,keyword:"web app",priority:90,target:"Client Services"}
+    {id:4,keyword:"web app",priority:90,target:"Client Services"},
+    {id:5,keyword:"seo",priority:85,target:"Growth Dept"},
+    {id:6,keyword:"copy",priority:85,target:"Growth Dept"},
+    {id:7,keyword:"deploy",priority:80,target:"Client Services"},
+    {id:8,keyword:"marketing",priority:80,target:"Growth Dept"}
 ];
 
 const agents = [
@@ -52,15 +73,11 @@ const agents = [
     {id:"0003-1",name:"Growth Dept",type:"department",status:"online"}
 ];
 
-let currentPage = 'dashboard';
-let currentSettingsTab = 'skills';
-let tasks = [];
-try {
-    const stored = localStorage.getItem('kdashx_tasks');
-    if (stored) tasks = JSON.parse(stored);
-} catch(e) { tasks = []; }
+function renderApp() {
+    return renderSidebar() + renderHeader() + '<main class="ml-0 lg:ml-64 pt-20 px-4 min-h-screen pb-20">' + 
+        renderDashboard() + renderOrg() + renderIntent() + renderExecution() + renderSettings() + '</main>';
+}
 
-// RENDER FUNCTIONS
 function renderSidebar() {
     const items = [
         {id:'dashboard',icon:'fa-home',label:'Dashboard'},
@@ -70,188 +87,119 @@ function renderSidebar() {
         {id:'settings',icon:'fa-cog',label:'Settings'}
     ];
     
-    let navHtml = '';
-    items.forEach(function(item) {
-        const isActive = currentPage === item.id;
-        const cls = isActive ? 'nav-item active' : 'nav-item text-slate-400';
-        navHtml += '<button class="' + cls + '" data-page="' + item.id + '">';
-        navHtml += '<i class="fas ' + item.icon + '" style="width:1.25rem"></i>';
-        navHtml += '<span>' + item.label + '</span></button>';
+    let html = '<aside class="desktop-sidebar fixed left-0 top-0 h-full w-64 glass-card z-50">';
+    html += '<div class="p-4 border-b border-white/5"><div class="flex items-center gap-3">';
+    html += '<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">K</div>';
+    html += '<div><h1 class="font-semibold text-white">K-DashX</h1><p class="text-xs text-slate-500">Command Center</p></div></div></div>';
+    html += '<nav class="p-4 space-y-1">';
+    items.forEach(item => {
+        html += '<button onclick="navigate(\'' + item.id + '\')" class="w-full flex items-center gap-3 px-3 py-3 rounded-lg nav-item text-left ' + (currentPage===item.id?'active':'text-slate-400') + '">';
+        html += '<i class="fas ' + item.icon + ' w-5"></i><span>' + item.label + '</span></button>';
     });
+    html += '</nav></aside>';
     
-    let mobileNav = '';
-    items.slice(0,5).forEach(function(item) {
-        const isActive = currentPage === item.id;
-        const cls = isActive ? 'text-blue-400' : 'text-slate-500';
-        mobileNav += '<button class="flex flex-col items-center gap-1 p-2 rounded-lg ' + cls + '" data-page="' + item.id + '" style="background:none;border:none;">';
-        mobileNav += '<i class="fas ' + item.icon + ' text-xl"></i>';
-        mobileNav += '<span style="font-size:10px">' + item.label.split(' ')[0] + '</span></button>';
+    html += '<nav class="bottom-nav justify-around items-center py-2 px-4">';
+    items.slice(0,5).forEach(item => {
+        html += '<button onclick="navigate(\'' + item.id + '\')" class="flex flex-col items-center gap-1 p-2 rounded-lg ' + (currentPage===item.id?'text-blue-400':'text-slate-500') + '">';
+        html += '<i class="fas ' + item.icon + ' text-xl"></i><span class="text-[10px]">' + item.label.split(' ')[0] + '</span></button>';
     });
-    
-    return '<aside class="desktop-sidebar glass-card" style="position:fixed;left:0;top:0;height:100%;width:16rem;z-index:50;">' +
-        '<div class="p-4 border-b border-white/5"><div style="display:flex;align-items:center;gap:0.75rem;">' +
-        '<div style="width:2.5rem;height:2.5rem;border-radius:0.75rem;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:1.125rem;">K</div>' +
-        '<div><h1 style="font-weight:600;color:white;margin:0;">K-DashX</h1><p style="font-size:0.75rem;color:#64748b;margin:0;">Command Center</p></div></div></div>' +
-        '<nav class="p-4" style="display:flex;flex-direction:column;gap:0.25rem;">' + navHtml + '</nav></aside>' +
-        '<nav class="bottom-nav justify-around items-center py-2 px-4">' + mobileNav + '</nav>';
+    html += '</nav>';
+    return html;
 }
 
 function renderHeader() {
-    return '<header style="position:fixed;top:0;right:0;left:0;height:4rem;z-index:40;" class="glass-card lg:left-64"><div style="height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;">' +
-        '<div style="display:flex;align-items:center;gap:1rem;"><span style="color:#4ade80;font-size:0.875rem;font-weight:500;"><i class="fas fa-circle" style="font-size:0.375rem;margin-right:0.5rem;"></i>Claude AI Active</span></div>' +
-        '<button onclick="haltSystem()" style="padding:0.5rem 0.75rem;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);border-radius:0.5rem;font-size:0.875rem;font-weight:500;">' +
-        '<i class="fas fa-power-off" style="margin-right:0.5rem;"></i>Halt</button></div></header>';
+    return '<header class="fixed top-0 right-0 left-0 lg:left-64 h-16 glass-card z-40"><div class="h-full flex items-center justify-between px-4">' +
+        '<div class="flex items-center gap-4"><span class="text-green-400 text-sm"><i class="fas fa-circle text-xs mr-2"></i>Claude AI Active</span></div>' +
+        '<button onclick="haltSystem()" class="px-3 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg text-sm">' +
+        '<i class="fas fa-power-off mr-2"></i>Halt</button></div></header>';
 }
 
 function renderDashboard() {
-    const executing = tasks.filter(function(t) { return t.status === 'executing'; }).length;
-    const completed = tasks.filter(function(t) { return t.status === 'completed'; }).length;
-    const pending = tasks.filter(function(t) { return t.status === 'submitted'; }).length;
-    const isActive = currentPage === 'dashboard' ? 'active' : '';
+    const executing = tasks.filter(t => t.status === 'executing').length;
+    const completed = tasks.filter(t => t.status === 'completed').length;
+    const pending = tasks.filter(t => t.status === 'submitted').length;
     
-    let tasksHtml = '<div class="p-4 text-center text-slate-500">No tasks yet. Submit one via Intent page.</div>';
-    if (tasks.length > 0) {
-        tasksHtml = tasks.slice(0,5).map(function(t) {
-            return '<div class="p-4"><div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;">' +
-                '<p style="color:white;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + t.intent.substring(0,50) + '</p>' +
-                '<span style="font-size:0.75rem;padding:0.25rem 0.5rem;border-radius:9999px;background:rgba(255,255,255,0.1);flex-shrink:0;">' + t.status + '</span></div></div>';
-        }).join('');
-    }
-    
-    return '<div id="page-dashboard" class="page ' + isActive + '">' +
-        '<h1 style="font-size:1.5rem;font-weight:700;color:white;margin-bottom:1.5rem;">Dashboard</h1>' +
-        '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:1.5rem;">' +
-        '<div class="glass-card" style="padding:1rem;"><p style="font-size:0.875rem;color:#94a3b8;margin:0 0 0.25rem;">System</p><p style="font-size:1.25rem;font-weight:700;color:#4ade80;margin:0;">Online</p></div>' +
-        '<div class="glass-card" style="padding:1rem;"><p style="font-size:0.875rem;color:#94a3b8;margin:0 0 0.25rem;">Active</p><p style="font-size:1.25rem;font-weight:700;color:#60a5fa;margin:0;">' + executing + '</p></div>' +
-        '<div class="glass-card" style="padding:1rem;"><p style="font-size:0.875rem;color:#94a3b8;margin:0 0 0.25rem;">Completed</p><p style="font-size:1.25rem;font-weight:700;color:#34d399;margin:0;">' + completed + '</p></div>' +
-        '<div class="glass-card" style="padding:1rem;"><p style="font-size:0.875rem;color:#94a3b8;margin:0 0 0.25rem;">Pending</p><p style="font-size:1.25rem;font-weight:700;color:#fbbf24;margin:0;">' + pending + '</p></div>' +
+    return '<div id="page-dashboard" class="page ' + (currentPage==='dashboard'?'active':'') + '">' +
+        '<h1 class="text-2xl font-bold text-white mb-6">Dashboard</h1>' +
+        '<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">' +
+        '<div class="glass-card p-4"><p class="text-sm text-slate-400">System</p><p class="text-xl font-bold text-green-400">Online</p></div>' +
+        '<div class="glass-card p-4"><p class="text-sm text-slate-400">Active</p><p class="text-xl font-bold text-blue-400">' + executing + '</p></div>' +
+        '<div class="glass-card p-4"><p class="text-sm text-slate-400">Completed</p><p class="text-xl font-bold text-emerald-400">' + completed + '</p></div>' +
+        '<div class="glass-card p-4"><p class="text-sm text-slate-400">Pending</p><p class="text-xl font-bold text-amber-400">' + pending + '</p></div>' +
         '</div>' +
-        '<div class="glass-card"><div style="padding:1rem;border-bottom:1px solid rgba(255,255,255,0.05);"><h2 style="font-size:1.125rem;font-weight:600;color:white;margin:0;">Recent Tasks</h2></div>' +
-        '<div style="border-top:1px solid rgba(255,255,255,0.05);">' + tasksHtml + '</div></div></div>';
+        '<div class="glass-card"><div class="p-4 border-b border-white/5"><h2 class="text-lg font-semibold text-white">Recent Tasks</h2></div>' +
+        '<div class="divide-y divide-white/5">' + (tasks.length === 0 ? '<div class="p-4 text-center text-slate-500">No tasks yet</div>' : 
+        tasks.slice(0,5).map(t => '<div class="p-4"><div class="flex justify-between"><p class="text-white">' + t.intent.substring(0,50) + '</p><span class="text-xs px-2 py-1 rounded bg-white/10">' + t.status + '</span></div></div>').join('')) +
+        '</div></div></div>';
 }
 
 function renderOrg() {
-    const isActive = currentPage === 'org' ? 'active' : '';
-    const agentsHtml = agents.map(function(a) {
-        const statusColor = a.status === 'online' ? '#4ade80' : '#fbbf24';
-        return '<div style="padding:0.75rem;display:flex;align-items:center;gap:0.75rem;">' +
-            '<i class="fas fa-user" style="color:#60a5fa;"></i>' +
-            '<span style="color:white;">' + a.name + '</span>' +
-            '<span style="font-size:0.75rem;color:' + statusColor + '">' + a.status + '</span></div>';
-    }).join('');
-    
-    return '<div id="page-org" class="page ' + isActive + '">' +
-        '<h1 style="font-size:1.5rem;font-weight:700;color:white;margin-bottom:1.5rem;">Organization</h1>' +
-        '<div class="glass-card" style="padding:1rem;">' + agentsHtml + '</div></div>';
+    return '<div id="page-org" class="page ' + (currentPage==='org'?'active':'') + '">' +
+        '<h1 class="text-2xl font-bold text-white mb-6">Organization</h1>' +
+        '<div class="glass-card p-4">' + agents.map(a => 
+            '<div class="p-3 flex items-center gap-3"><i class="fas fa-user text-blue-400"></i><span class="text-white">' + a.name + '</span><span class="text-xs ' + (a.status==='online'?'text-green-400':'text-amber-400') + '">' + a.status + '</span></div>'
+        ).join('') + '</div></div>';
 }
 
 function renderIntent() {
-    const isActive = currentPage === 'intent' ? 'active' : '';
-    return '<div id="page-intent" class="page ' + isActive + '">' +
-        '<h1 style="font-size:1.5rem;font-weight:700;color:white;margin-bottom:1.5rem;">Submit Task</h1>' +
-        '<div style="max-width:42rem;"><form onsubmit="submitTask(event)" class="glass-card" style="padding:1.5rem;">' +
-        '<textarea id="intentInput" placeholder="What do you want to build?" style="height:8rem;margin-bottom:1rem;" required></textarea>' +
-        '<button type="submit" style="width:100%;padding:0.75rem;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;border-radius:0.5rem;font-weight:500;">' +
-        '<i class="fas fa-paper-plane" style="margin-right:0.5rem;"></i>Submit to Claude AI</button></form></div></div>';
+    return '<div id="page-intent" class="page ' + (currentPage==='intent'?'active':'') + '">' +
+        '<h1 class="text-2xl font-bold text-white mb-6">Submit Task</h1>' +
+        '<div class="max-w-2xl"><form onsubmit="submitTask(event)" class="glass-card p-6">' +
+        '<textarea id="intentInput" placeholder="What do you want to build?" class="h-32 mb-4" required></textarea>' +
+        '<button type="submit" class="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg font-medium">' +
+        '<i class="fas fa-paper-plane mr-2"></i>Submit to Claude AI</button></form></div></div>';
 }
 
 function renderExecution() {
-    const isActive = currentPage === 'execution' ? 'active' : '';
-    let tasksHtml = '<div style="padding:2rem;text-align:center;color:#64748b;"><i class="fas fa-folder-open" style="font-size:2.25rem;margin-bottom:0.75rem;display:block;"></i>No tasks submitted yet.</div>';
-    if (tasks.length > 0) {
-        tasksHtml = tasks.map(function(t) {
-            return '<div style="padding:1rem;"><p style="color:white;font-weight:500;margin:0;">' + t.intent.substring(0,60) + '</p>' +
-                '<div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem;">' +
-                '<span style="font-size:0.75rem;padding:0.25rem 0.5rem;border-radius:9999px;background:rgba(255,255,255,0.1);color:#cbd5e1;">' + t.status + '</span>' +
-                '<span style="font-size:0.75rem;color:#64748b;">' + new Date(t.submitted_at).toLocaleString() + '</span></div></div>';
-        }).join('');
-    }
-    
-    return '<div id="page-execution" class="page ' + isActive + '">' +
-        '<h1 style="font-size:1.5rem;font-weight:700;color:white;margin-bottom:1.5rem;">Execution</h1>' +
-        '<div class="glass-card"><div style="padding:1rem;border-bottom:1px solid rgba(255,255,255,0.05);"><h2 style="font-size:1.125rem;font-weight:600;color:white;margin:0;">Tasks</h2></div>' +
-        '<div>' + tasksHtml + '</div></div></div>';
+    return '<div id="page-execution" class="page ' + (currentPage==='execution'?'active':'') + '">' +
+        '<h1 class="text-2xl font-bold text-white mb-6">Execution</h1>' +
+        '<div class="glass-card"><div class="p-4 border-b border-white/5"><h2 class="text-lg font-semibold text-white">Tasks</h2></div>' +
+        '<div class="divide-y divide-white/5">' + (tasks.length === 0 ? '<div class="p-8 text-center text-slate-500">No tasks submitted</div>' :
+        tasks.map(t => '<div class="p-4"><p class="text-white font-medium">' + t.intent.substring(0,60) + '</p><div class="flex items-center gap-2 mt-2"><span class="text-xs px-2 py-1 rounded bg-white/10 text-slate-300">' + t.status + '</span><span class="text-xs text-slate-400">' + new Date(t.submitted_at).toLocaleString() + '</span></div></div>').join('')) +
+        '</div></div></div>';
 }
 
 function renderSettings() {
-    const isActive = currentPage === 'settings' ? 'active' : '';
-    const skillsBtnClass = currentSettingsTab === 'skills' ? 'tab-btn active' : 'tab-btn';
-    const routingBtnClass = currentSettingsTab === 'routing' ? 'tab-btn active' : 'tab-btn';
-    
-    let contentHtml = '';
-    if (currentSettingsTab === 'skills') {
-        contentHtml = '<div style="display:grid;grid-template-columns:repeat(1,1fr);gap:0.75rem;">' + skillsCatalog.map(function(s) {
-            const riskClass = s.risk === 'medium' ? 'background:rgba(251,191,36,0.2);color:#fbbf24;' : 'background:rgba(74,222,128,0.2);color:#4ade80;';
-            return '<div style="padding:0.75rem;background:rgba(255,255,255,0.05);border-radius:0.5rem;">' +
-                '<div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">' +
-                '<span style="color:white;font-weight:500;">' + s.name + '</span>' +
-                '<span style="font-size:0.75rem;padding:0.25rem 0.5rem;border-radius:9999px;' + riskClass + '">' + s.risk + '</span></div>' +
-                '<span style="font-size:0.75rem;color:#94a3b8;">' + s.category + '</span></div>';
-        }).join('') + '</div>';
-    } else {
-        contentHtml = '<div style="display:flex;flex-direction:column;gap:0.5rem;">' + routingRules.map(function(r) {
-            return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem;background:rgba(255,255,255,0.05);border-radius:0.5rem;">' +
-                '<span style="padding:0.25rem 0.5rem;background:rgba(168,85,247,0.2);color:#a855f7;border-radius:0.25rem;font-size:0.75rem;font-weight:500;">' + r.keyword + '</span>' +
-                '<i class="fas fa-arrow-right" style="color:#64748b;"></i>' +
-                '<span style="color:white;">' + r.target + '</span>' +
-                '<span style="font-size:0.75rem;color:#94a3b8;">P' + r.priority + '</span></div>';
-        }).join('') + '</div>';
-    }
-    
-    return '<div id="page-settings" class="page ' + isActive + '">' +
-        '<h1 style="font-size:1.5rem;font-weight:700;color:white;margin-bottom:1.5rem;">Settings</h1>' +
-        '<div style="display:flex;gap:0.5rem;margin-bottom:1.5rem;">' +
-        '<button onclick="setTabSkills()" class="' + skillsBtnClass + '">Skills (' + skillsCatalog.length + ')</button>' +
-        '<button onclick="setTabRouting()" class="' + routingBtnClass + '">Routing (' + routingRules.length + ')</button>' +
+    return '<div id="page-settings" class="page ' + (currentPage==='settings'?'active':'') + '">' +
+        '<h1 class="text-2xl font-bold text-white mb-6">Settings</h1>' +
+        '<div class="flex gap-2 mb-6">' +
+        '<button onclick="setTab(\'skills\')" class="tab-btn ' + (currentSettingsTab==='skills'?'active':'') + '">Skills (' + skillsCatalog.length + ')</button>' +
+        '<button onclick="setTab(\'routing\')" class="tab-btn ' + (currentSettingsTab==='routing'?'active':'') + '">Routing (' + routingRules.length + ')</button>' +
         '</div>' +
-        '<div class="glass-card" style="padding:1.5rem;">' + contentHtml + '</div></div>';
+        '<div class="glass-card p-6">' +
+        (currentSettingsTab === 'skills' ? 
+            '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">' + skillsCatalog.map(s => 
+                '<div class="p-3 bg-white/5 rounded-lg"><div class="flex justify-between mb-1"><span class="text-white">' + s.name + '</span><span class="text-xs px-2 py-1 rounded ' + (s.risk==='medium'?'bg-amber-500/20 text-amber-400':'bg-green-500/20 text-green-400') + '">' + s.risk + '</span></div><span class="text-xs text-slate-400">' + s.category + '</span></div>'
+            ).join('') + '</div>' :
+            '<div class="space-y-2">' + routingRules.map(r => 
+                '<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg"><span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">' + r.keyword + '</span><i class="fas fa-arrow-right text-slate-500"></i><span class="text-white">' + r.target + '</span><span class="text-xs text-slate-400">P' + r.priority + '</span></div>'
+            ).join('') + '</div>') +
+        '</div></div>';
 }
 
-function renderApp() {
-    return renderSidebar() + renderHeader() + '<main style="margin-left:0;padding-top:5rem;padding-left:1rem;padding-right:1rem;min-height:100vh;padding-bottom:5rem;" class="lg:ml-64">' + 
-        renderDashboard() + renderOrg() + renderIntent() + renderExecution() + renderSettings() + '</main>';
-}
-
-// NAVIGATION
-function navigate(pageName) {
-    currentPage = pageName;
-    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-    var pageEl = document.getElementById('page-' + currentPage);
+function navigate(page) {
+    currentPage = page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const pageEl = document.getElementById('page-' + page);
     if (pageEl) pageEl.classList.add('active');
     render();
 }
 
-function setTabSkills() {
-    currentSettingsTab = 'skills';
-    render();
-}
-
-function setTabRouting() {
-    currentSettingsTab = 'routing';
+function setTab(tab) {
+    currentSettingsTab = tab;
     render();
 }
 
 function render() {
     document.getElementById('app').innerHTML = renderApp();
-    attachEventListeners();
 }
 
-function attachEventListeners() {
-    // Attach click handlers to sidebar buttons
-    document.querySelectorAll('[data-page]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            navigate(btn.dataset.page);
-        });
-    });
-}
-
-// TASK FUNCTIONS
 function submitTask(e) {
     e.preventDefault();
-    var intent = document.getElementById('intentInput').value.trim();
+    const intent = document.getElementById('intentInput').value.trim();
     if (!intent) return;
     
-    var task = {
+    const task = {
         id: 'task-' + Date.now(),
         intent: intent,
         status: 'submitted',
@@ -261,9 +209,7 @@ function submitTask(e) {
     };
     
     tasks.unshift(task);
-    try {
-        localStorage.setItem('kdashx_tasks', JSON.stringify(tasks));
-    } catch(e) {}
+    localStorage.setItem('kdashx_tasks', JSON.stringify(tasks));
     
     document.getElementById('intentInput').value = '';
     alert('Task submitted: ' + intent);
@@ -271,17 +217,15 @@ function submitTask(e) {
 }
 
 function routeIntent(intent) {
-    var lower = intent.toLowerCase();
-    if (lower.indexOf('stripe') !== -1 || lower.indexOf('payment') !== -1) return 'Licensing';
-    if (lower.indexOf('seo') !== -1 || lower.indexOf('copy') !== -1 || lower.indexOf('marketing') !== -1) return 'Growth Dept';
+    const lower = intent.toLowerCase();
+    if (lower.includes('stripe') || lower.includes('payment')) return 'Licensing';
+    if (lower.includes('seo') || lower.includes('copy') || lower.includes('marketing')) return 'Growth Dept';
     return 'Client Services';
 }
 
 function haltSystem() {
     if (confirm('Halt all systems?')) alert('System halted');
 }
-
-// INITIAL RENDER
-document.getElementById('app').innerHTML = renderApp();
-attachEventListeners();
-</script></body></html>
+    </script>
+</body>
+</html>
