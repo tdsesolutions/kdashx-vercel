@@ -45,11 +45,11 @@
             </div>
         </div>
         <nav style="padding: 16px;">
-            <button class="nav-item active" data-page="dashboard"><i class="fas fa-home" style="width: 20px;"></i>Dashboard</button>
-            <button class="nav-item" data-page="org"><i class="fas fa-network-wired" style="width: 20px;"></i>Organization</button>
-            <button class="nav-item" data-page="intent"><i class="fas fa-plus-circle" style="width: 20px;"></i>Intent</button>
-            <button class="nav-item" data-page="execution"><i class="fas fa-play-circle" style="width: 20px;"></i>Execution</button>
-            <button class="nav-item" data-page="settings"><i class="fas fa-cog" style="width: 20px;"></i>Settings</button>
+            <button class="nav-item active" onclick="navigate('dashboard')"><i class="fas fa-home" style="width: 20px;"></i>Dashboard</button>
+            <button class="nav-item" onclick="navigate('org')"><i class="fas fa-network-wired" style="width: 20px;"></i>Organization</button>
+            <button class="nav-item" onclick="navigate('intent')"><i class="fas fa-plus-circle" style="width: 20px;"></i>Intent</button>
+            <button class="nav-item" onclick="navigate('execution')"><i class="fas fa-play-circle" style="width: 20px;"></i>Execution</button>
+            <button class="nav-item" onclick="navigate('settings')"><i class="fas fa-cog" style="width: 20px;"></i>Settings</button>
         </nav>
         <div style="padding: 16px; border-top: 1px solid rgba(255,255,255,0.05);">
             <div style="font-size: 12px; color: #64748b;">
@@ -61,11 +61,11 @@
 
     <!-- Mobile Nav -->
     <nav class="bottom-nav">
-        <button data-page="dashboard" style="background: none; border: none; color: #60a5fa; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-home" style="font-size: 20px;"></i><span style="font-size: 10px;">Dashboard</span></button>
-        <button data-page="org" style="background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-network-wired" style="font-size: 20px;"></i><span style="font-size: 10px;">Org</span></button>
-        <button data-page="intent" style="background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-plus-circle" style="font-size: 20px;"></i><span style="font-size: 10px;">Intent</span></button>
-        <button data-page="execution" style="background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-play-circle" style="font-size: 20px;"></i><span style="font-size: 10px;">Exec</span></button>
-        <button data-page="settings" style="background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-cog" style="font-size: 20px;"></i><span style="font-size: 10px;">Settings</span></button>
+        <button onclick="navigate('dashboard')" style="background: none; border: none; color: #60a5fa; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-home" style="font-size: 20px;"></i><span style="font-size: 10px;">Dashboard</span></button>
+        <button onclick="navigate('org')" style="background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-network-wired" style="font-size: 20px;"></i><span style="font-size: 10px;">Org</span></button>
+        <button onclick="navigate('intent')" style="background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-plus-circle" style="font-size: 20px;"></i><span style="font-size: 10px;">Intent</span></button>
+        <button onclick="navigate('execution')" style="background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-play-circle" style="font-size: 20px;"></i><span style="font-size: 10px;">Exec</span></button>
+        <button onclick="navigate('settings')" style="background: none; border: none; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px;"><i class="fas fa-cog" style="font-size: 20px;"></i><span style="font-size: 10px;">Settings</span></button>
     </nav>
 
     <!-- Header -->
@@ -312,18 +312,19 @@
     </main>
 
     <script>
-        // Navigation
-        document.querySelectorAll('[data-page]').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var page = btn.dataset.page;
-                document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-                document.getElementById('page-' + page).classList.add('active');
-                document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-                document.querySelectorAll('[data-page="' + page + '"]').forEach(function(n) { 
-                    if (n.classList.contains('nav-item')) n.classList.add('active');
-                });
+        // Navigation function
+        function navigate(page) {
+            document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+            document.getElementById('page-' + page).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+            // Update sidebar nav items
+            var buttons = document.querySelectorAll('.nav-item');
+            buttons.forEach(function(btn) {
+                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes("'" + page + "'")) {
+                    btn.classList.add('active');
+                }
             });
-        });
+        }
 
         // Task submission
         function submitTask(e) {
