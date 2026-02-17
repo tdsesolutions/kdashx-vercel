@@ -30,6 +30,14 @@
 // RENDER APP IMMEDIATELY - don't wait for Supabase
 document.getElementById('app').innerHTML = renderApp();
 
+// Attach event listeners to navigation buttons
+document.querySelectorAll('[data-page]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+        navigate(btn.dataset.page);
+    });
+});
+
+
 // DATA
 let currentPage = 'dashboard';
 let currentSettingsTab = 'skills';
@@ -192,6 +200,14 @@ function setTab(tab) {
 
 function render() {
     document.getElementById('app').innerHTML = renderApp();
+
+// Attach event listeners to navigation buttons
+document.querySelectorAll('[data-page]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+        navigate(btn.dataset.page);
+    });
+});
+
 }
 
 function submitTask(e) {
@@ -229,3 +245,13 @@ function haltSystem() {
     </script>
 </body>
 </html>
+<script>
+// Fix: Attach event listeners after render
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-page]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            navigate(btn.dataset.page);
+        });
+    });
+});
+</script>
