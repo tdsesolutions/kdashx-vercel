@@ -11,24 +11,21 @@
         body { background: #0a0a0f; color: #e2e8f0; margin: 0; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; }
         .glass-card { background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; }
         .page { display: none; padding: 20px; }
-        .page.active { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+        .page.active { display: block; }
         .nav-item { background: transparent; border: none; width: 100%; text-align: left; padding: 12px; display: flex; align-items: center; gap: 12px; border-radius: 8px; cursor: pointer; color: #94a3b8; font-size: 14px; }
         .nav-item:hover { background: rgba(255,255,255,0.05); }
         .nav-item.active { background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
-        input, textarea { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 8px; width: 100%; font-size: 16px; font-family: inherit; }
-        input:focus, textarea:focus { outline: none; border-color: rgba(59,130,246,0.5); }
-        button { transition: all 0.2s; cursor: pointer; border: none; font-family: inherit; }
-        .desktop-sidebar { position: fixed; left: 0; top: 0; height: 100%; width: 256px; z-index: 50; }
-        .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: rgba(10,10,15,0.95); border-top: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; }
-        @media (max-width: 1023px) { 
-            .desktop-sidebar { display: none; } 
-            .bottom-nav { display: flex; justify-content: space-around; } 
-            .main-content { margin-left: 0 !important; padding-bottom: 80px; }
-        }
+        .desktop-sidebar { position: fixed; left: 0; top: 0; height: 100%; width: 256px; z-index: 50; overflow-y: auto; }
+        .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: rgba(10,10,15,0.95); border-top: 1px solid rgba(255,255,255,0.1); padding: 8px; }
+        @media (max-width: 1023px) { .desktop-sidebar { display: none; } .bottom-nav { display: flex; justify-content: space-around; } .main-content { margin-left: 0 !important; padding-bottom: 80px; } }
         .main-content { margin-left: 256px; padding-top: 80px; min-height: 100vh; }
         header { position: fixed; top: 0; right: 0; left: 256px; height: 64px; z-index: 40; }
         @media (max-width: 1023px) { header { left: 0; } }
+        .agent-card { padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.05); margin-bottom: 8px; }
+        .agent-executive { border-left: 3px solid #a855f7; }
+        .agent-business { border-left: 3px solid #3b82f6; }
+        .agent-department { border-left: 3px solid #f59e0b; }
+        .agent-specialist { border-left: 3px solid #10b981; }
     </style>
 </head>
 <body>
@@ -64,9 +61,7 @@
     <!-- Header -->
     <header class="glass-card">
         <div style="height: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0 16px;">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <span style="color: #4ade80; font-size: 14px; font-weight: 500;"><i class="fas fa-circle" style="font-size: 6px; margin-right: 8px;"></i>Claude AI Active</span>
-            </div>
+            <span style="color: #4ade80; font-size: 14px; font-weight: 500;"><i class="fas fa-circle" style="font-size: 6px; margin-right: 8px;"></i>Claude AI Active</span>
             <button onclick="haltSystem()" style="padding: 8px 12px; background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; font-size: 14px;"><i class="fas fa-power-off" style="margin-right: 8px;"></i>Halt</button>
         </div>
     </header>
@@ -78,35 +73,86 @@
             <h1 style="font-size: 24px; font-weight: 700; color: white; margin-bottom: 24px;">Dashboard</h1>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
                 <div class="glass-card" style="padding: 16px;"><p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px;">System</p><p style="font-size: 20px; font-weight: 700; color: #4ade80; margin: 0;">Online</p></div>
-                <div class="glass-card" style="padding: 16px;"><p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px;">Active</p><p style="font-size: 20px; font-weight: 700; color: #60a5fa; margin: 0;">0</p></div>
-                <div class="glass-card" style="padding: 16px;"><p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px;">Completed</p><p style="font-size: 20px; font-weight: 700; color: #34d399; margin: 0;">0</p></div>
-                <div class="glass-card" style="padding: 16px;"><p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px;">Pending</p><p style="font-size: 20px; font-weight: 700; color: #fbbf24; margin: 0;">0</p></div>
+                <div class="glass-card" style="padding: 16px;"><p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px;">Agents</p><p style="font-size: 20px; font-weight: 700; color: #60a5fa; margin: 0;">20</p></div>
+                <div class="glass-card" style="padding: 16px;"><p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px;">Skills</p><p style="font-size: 20px; font-weight: 700; color: #34d399; margin: 0;">10</p></div>
+                <div class="glass-card" style="padding: 16px;"><p style="font-size: 14px; color: #94a3b8; margin: 0 0 4px;">Routing Rules</p><p style="font-size: 20px; font-weight: 700; color: #fbbf24; margin: 0;">7</p></div>
             </div>
             <div class="glass-card">
-                <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);"><h2 style="font-size: 18px; font-weight: 600; color: white; margin: 0;">Recent Tasks</h2></div>
-                <div style="padding: 16px; text-align: center; color: #64748b;">No tasks yet. Submit one via Intent page.</div>
+                <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);"><h2 style="font-size: 18px; font-weight: 600; color: white; margin: 0;">System Overview</h2></div>
+                <div style="padding: 16px;">
+                    <p style="color: #94a3b8; margin: 0;">20 agents across 4 hierarchy levels</p>
+                    <p style="color: #94a3b8; margin: 8px 0 0 0;">1 Executive | 7 Business | 4 Departments | 8 Specialists</p>
+                </div>
             </div>
         </div>
-
         <!-- Organization -->
         <div id="page-org" class="page">
             <h1 style="font-size: 24px; font-weight: 700; color: white; margin-bottom: 24px;">Organization</h1>
+            <p style="color: #94a3b8; margin-bottom: 16px;">20 agents across 4 hierarchy levels</p>
+            
+            <!-- Level 1: Executive -->
+            <div class="glass-card" style="padding: 16px; margin-bottom: 16px;">
+                <h3 style="color: #a855f7; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0;">Executive</h3>
+                <div class="agent-card agent-executive">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-crown" style="color: #a855f7;"></i>
+                            <div>
+                                <div style="color: white; font-weight: 500;">Chief of Staff</div>
+                                <div style="font-size: 12px; color: #64748b;">ID: 0001 | planning, coordination</div>
+                            </div>
+                        </div>
+                        <span style="font-size: 12px; color: #4ade80;">online</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level 2: Business Managers -->
+            <div class="glass-card" style="padding: 16px; margin-bottom: 16px;">
+                <h3 style="color: #3b82f6; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0;">Business Managers (7)</h3>
+                <div class="agent-card agent-business"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-briefcase" style="color: #3b82f6;"></i><div><div style="color: white; font-weight: 500;">TDS Enterprise</div><div style="font-size: 12px; color: #64748b;">ID: 0002-1 | pricing, strategy</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-business"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-briefcase" style="color: #3b82f6;"></i><div><div style="color: white; font-weight: 500;">Featured Apps</div><div style="font-size: 12px; color: #64748b;">ID: 0002-2 | mcp, postgres</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-business"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-briefcase" style="color: #3b82f6;"></i><div><div style="color: white; font-weight: 500;">Elite Solutions</div><div style="font-size: 12px; color: #64748b;">ID: 0002-3 | analysis, positioning</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-business"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-briefcase" style="color: #3b82f6;"></i><div><div style="color: white; font-weight: 500;">Jumpstart CACFP</div><div style="font-size: 12px; color: #64748b;">ID: 0002-4 | marketing, content</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-business"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-briefcase" style="color: #3b82f6;"></i><div><div style="color: white; font-weight: 500;">Client Services</div><div style="font-size: 12px; color: #64748b;">ID: 0002-5 | nodejs, backend, testing</div></div></div><span style="font-size: 12px; color: #fbbf24;">busy</span></div></div>
+                <div class="agent-card agent-business"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-briefcase" style="color: #3b82f6;"></i><div><div style="color: white; font-weight: 500;">Licensing</div><div style="font-size: 12px; color: #64748b;">ID: 0002-6 | stripe, billing, auth</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-business"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-briefcase" style="color: #3b82f6;"></i><div><div style="color: white; font-weight: 500;">Education Tech</div><div style="font-size: 12px; color: #64748b;">ID: 0002-7 | compliance, accessibility</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+            </div>
+
+            <!-- Level 3: Departments -->
+            <div class="glass-card" style="padding: 16px; margin-bottom: 16px;">
+                <h3 style="color: #f59e0b; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0;">Departments (4)</h3>
+                <div class="agent-card agent-department"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-building" style="color: #f59e0b;"></i><div><div style="color: white; font-weight: 500;">Growth Dept</div><div style="font-size: 12px; color: #64748b;">ID: 0003-1 | seo, copywriting | 3 specialists</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-department"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-building" style="color: #f59e0b;"></i><div><div style="color: white; font-weight: 500;">Product Dept</div><div style="font-size: 12px; color: #64748b;">ID: 0003-2 | debugging, review | 3 specialists</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-department"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-building" style="color: #f59e0b;"></i><div><div style="color: white; font-weight: 500;">Operations</div><div style="font-size: 12px; color: #64748b;">ID: 0003-3 | deploy, monitoring | 1 specialist</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-department"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-building" style="color: #f59e0b;"></i><div><div style="color: white; font-weight: 500;">Legal/Finance</div><div style="font-size: 12px; color: #64748b;">ID: 0003-4 | compliance, pci | 1 specialist</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+            </div>
+
+            <!-- Level 4: Specialists -->
             <div class="glass-card" style="padding: 16px;">
-                <div style="padding: 12px; display: flex; align-items: center; gap: 12px;"><i class="fas fa-user" style="color: #60a5fa;"></i><span style="color: white;">Chief of Staff</span><span style="font-size: 12px; color: #4ade80;">online</span></div>
-                <div style="padding: 12px; display: flex; align-items: center; gap: 12px;"><i class="fas fa-user" style="color: #60a5fa;"></i><span style="color: white;">Client Services</span><span style="font-size: 12px; color: #fbbf24;">busy</span></div>
-                <div style="padding: 12px; display: flex; align-items: center; gap: 12px;"><i class="fas fa-user" style="color: #60a5fa;"></i><span style="color: white;">Licensing</span><span style="font-size: 12px; color: #4ade80;">online</span></div>
-                <div style="padding: 12px; display: flex; align-items: center; gap: 12px;"><i class="fas fa-user" style="color: #60a5fa;"></i><span style="color: white;">Growth Dept</span><span style="font-size: 12px; color: #4ade80;">online</span></div>
+                <h3 style="color: #10b981; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0;">Specialists (8)</h3>
+                <div class="agent-card agent-specialist"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-cog" style="color: #10b981;"></i><div><div style="color: white; font-weight: 500;">Continuous Cognition</div><div style="font-size: 12px; color: #64748b;">ID: 0004-1 | planning, analysis</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-specialist"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-cog" style="color: #10b981;"></i><div><div style="color: white; font-weight: 500;">macOS Engineer</div><div style="font-size: 12px; color: #64748b;">ID: 0004-2 | swift, xcode</div></div></div><span style="font-size: 12px; color: #fbbf24;">busy</span></div></div>
+                <div class="agent-card agent-specialist"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-cog" style="color: #10b981;"></i><div><div style="color: white; font-weight: 500;">Web Engineer</div><div style="font-size: 12px; color: #64748b;">ID: 0004-3 | frontend, backend</div></div></div><span style="font-size: 12px; color: #fbbf24;">busy</span></div></div>
+                <div class="agent-card agent-specialist"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-cog" style="color: #10b981;"></i><div><div style="color: white; font-weight: 500;">QA/Test Runner</div><div style="font-size: 12px; color: #64748b;">ID: 0004-4 | testing, automation</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-specialist"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-cog" style="color: #10b981;"></i><div><div style="color: white; font-weight: 500;">Proposal Writer</div><div style="font-size: 12px; color: #64748b;">ID: 0004-5 | writing, editing</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-specialist"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-cog" style="color: #10b981;"></i><div><div style="color: white; font-weight: 500;">Lead Research</div><div style="font-size: 12px; color: #64748b;">ID: 0004-6 | research, analysis</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-specialist"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-cog" style="color: #10b981;"></i><div><div style="color: white; font-weight: 500;">Compliance Analyzer</div><div style="font-size: 12px; color: #64748b;">ID: 0004-7 | gdpr, security</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
+                <div class="agent-card agent-specialist"><div style="display: flex; align-items: center; justify-content: space-between;"><div style="display: flex; align-items: center; gap: 12px;"><i class="fas fa-user-cog" style="color: #10b981;"></i><div><div style="color: white; font-weight: 500;">Brand Messaging</div><div style="font-size: 12px; color: #64748b;">ID: 0004-8 | branding, design</div></div></div><span style="font-size: 12px; color: #4ade80;">online</span></div></div>
             </div>
         </div>
-
         <!-- Intent -->
         <div id="page-intent" class="page">
             <h1 style="font-size: 24px; font-weight: 700; color: white; margin-bottom: 24px;">Submit Task</h1>
             <div style="max-width: 600px;">
                 <form onsubmit="submitTask(event)" class="glass-card" style="padding: 24px;">
-                    <textarea id="intentInput" placeholder="What do you want to build?" style="height: 120px; margin-bottom: 16px;" required></textarea>
+                    <textarea id="intentInput" placeholder="What do you want to build? (e.g., Build Stripe checkout, Create landing page...)" style="height: 120px; margin-bottom: 16px;" required></textarea>
                     <button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #3b82f6, #6366f1); color: white; border-radius: 8px; font-weight: 500;"><i class="fas fa-paper-plane" style="margin-right: 8px;"></i>Submit to Claude AI</button>
                 </form>
+                <div class="glass-card" style="padding: 16px; margin-top: 16px;">
+                    <h3 style="color: white; margin: 0 0 12px 0;">Routing Preview</h3>
+                    <p style="color: #94a3b8; font-size: 14px; margin: 0;">Type keywords like "stripe", "website", "seo" to see routing in action</p>
+                </div>
             </div>
         </div>
 
@@ -115,28 +161,141 @@
             <h1 style="font-size: 24px; font-weight: 700; color: white; margin-bottom: 24px;">Execution</h1>
             <div class="glass-card">
                 <div style="padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05);"><h2 style="font-size: 18px; font-weight: 600; color: white; margin: 0;">Tasks</h2></div>
-                <div id="tasks-list" style="padding: 32px; text-align: center; color: #64748b;"><i class="fas fa-folder-open" style="font-size: 36px; margin-bottom: 12px; display: block;"></i>No tasks submitted yet.</div>
+                <div id="tasks-list" style="padding: 32px; text-align: center; color: #64748b;"><i class="fas fa-folder-open" style="font-size: 36px; margin-bottom: 12px; display: block;"></i>No tasks submitted yet. Go to Intent page to create one.</div>
             </div>
         </div>
 
-        <!-- Settings -->
+        <!-- Settings with ALL Skills and Routing Rules -->
         <div id="page-settings" class="page">
             <h1 style="font-size: 24px; font-weight: 700; color: white; margin-bottom: 24px;">Settings</h1>
             <div style="display: flex; gap: 8px; margin-bottom: 24px;">
-                <button onclick="showSkills()" id="btn-skills" style="padding: 12px 16px; border-radius: 8px; background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);">Skills (5)</button>
-                <button onclick="showRouting()" id="btn-routing" style="padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #94a3b8; border: none;">Routing (4)</button>
+                <button onclick="showTab('skills')" id="btn-skills" style="padding: 12px 16px; border-radius: 8px; background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);">Skills (10)</button>
+                <button onclick="showTab('routing')" id="btn-routing" style="padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #94a3b8; border: none;">Routing Rules (7)</button>
             </div>
-            <div id="skills-content" class="glass-card" style="padding: 24px;">
-                <div style="display: grid; grid-template-columns: repeat(1, 1fr); gap: 12px;">
-                    <div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;"><div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color: white; font-weight: 500;">Stripe Integration</span><span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(251,191,36,0.2); color: #fbbf24;">medium</span></div><span style="font-size: 12px; color: #94a3b8;">payments</span></div>
-                    <div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;"><div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color: white; font-weight: 500;">Node.js Backend</span><span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low</span></div><span style="font-size: 12px; color: #94a3b8;">engineering</span></div>
-                    <div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;"><div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span style="color: white; font-weight: 500;">SEO Audit</span><span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low</span></div><span style="font-size: 12px; color: #94a3b8;">marketing</span></div>
+            
+            <!-- Skills Tab -->
+            <div id="tab-skills" style="display: block;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #fbbf24;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">OpenAPI Spec</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">engineering | Client Services</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #3b82f6;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">Node.js Backend</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">engineering | Client Services</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #fbbf24;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">Stripe Integration</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(251,191,36,0.2); color: #fbbf24;">medium risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">payments | Licensing</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #10b981;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">SEO Audit</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">marketing | Growth</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #10b981;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">Copywriting</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">marketing | Growth</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #8b5cf6;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">Deployment</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">ops | Client Services</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #8b5cf6;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">GitHub Actions</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">ops | Client Services</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #3b82f6;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">Architecture</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">engineering | Client Services</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #f472b6;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">Web Testing</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">testing | Client Services</div>
+                    </div>
+                    <div class="glass-card" style="padding: 16px; border-left: 3px solid #10b981;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: white; font-weight: 500;">Marketing Psychology</span>
+                            <span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(74,222,128,0.2); color: #4ade80;">low risk</span>
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">marketing | Growth</div>
+                    </div>
                 </div>
             </div>
-            <div id="routing-content" class="glass-card" style="padding: 24px; display: none;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;"><span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">stripe</span><i class="fas fa-arrow-right" style="color: #64748b;"></i><span style="color: white;">Licensing</span><span style="font-size: 12px; color: #94a3b8;">P100</span></div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;"><span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">website</span><i class="fas fa-arrow-right" style="color: #64748b;"></i><span style="color: white;">Client Services</span><span style="font-size: 12px; color: #94a3b8;">P90</span></div>
+
+            <!-- Routing Rules Tab -->
+            <div id="tab-routing" style="display: none;">
+                <div class="glass-card" style="padding: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">website</span>
+                            <i class="fas fa-arrow-right" style="color: #64748b;"></i>
+                            <span style="color: white;">Client Services</span>
+                            <span style="font-size: 12px; color: #94a3b8;">P80</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">web app</span>
+                            <i class="fas fa-arrow-right" style="color: #64748b;"></i>
+                            <span style="color: white;">Client Services</span>
+                            <span style="font-size: 12px; color: #94a3b8;">P80</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">stripe</span>
+                            <i class="fas fa-arrow-right" style="color: #64748b;"></i>
+                            <span style="color: white;">Licensing</span>
+                            <span style="font-size: 12px; color: #94a3b8;">P90</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">payment</span>
+                            <i class="fas fa-arrow-right" style="color: #64748b;"></i>
+                            <span style="color: white;">Licensing</span>
+                            <span style="font-size: 12px; color: #94a3b8;">P90</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">seo</span>
+                            <i class="fas fa-arrow-right" style="color: #64748b;"></i>
+                            <span style="color: white;">Growth Dept</span>
+                            <span style="font-size: 12px; color: #94a3b8;">P85</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">copy</span>
+                            <i class="fas fa-arrow-right" style="color: #64748b;"></i>
+                            <span style="color: white;">Growth Dept</span>
+                            <span style="font-size: 12px; color: #94a3b8;">P85</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <span style="padding: 4px 8px; background: rgba(168,85,247,0.2); color: #a855f7; border-radius: 4px; font-size: 12px; font-weight: 500;">deploy</span>
+                            <i class="fas fa-arrow-right" style="color: #64748b;"></i>
+                            <span style="color: white;">Client Services</span>
+                            <span style="font-size: 12px; color: #94a3b8;">P80</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -165,22 +324,28 @@
             document.getElementById('intentInput').value = '';
             document.getElementById('page-intent').classList.remove('active');
             document.getElementById('page-execution').classList.add('active');
-            document.getElementById('tasks-list').innerHTML = '<div style="padding: 16px;"><p style="color: white; margin: 0;">' + intent.substring(0,60) + '</p><div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;"><span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(255,255,255,0.1); color: #cbd5e1;">submitted</span></div></div>';
+            document.getElementById('tasks-list').innerHTML = '<div style="padding: 16px; text-align: left;"><p style="color: white; margin: 0;">' + intent.substring(0,60) + '</p><div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;"><span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(255,255,255,0.1); color: #cbd5e1;">submitted</span></div></div>';
+            document.querySelectorAll('[data-page]').forEach(function(n) { 
+                if (n.dataset.page === 'execution' && n.classList.contains('nav-item')) {
+                    document.querySelectorAll('.nav-item').forEach(function(ni) { ni.classList.remove('active'); });
+                    n.classList.add('active');
+                }
+            });
         }
 
         // Settings tabs
-        function showSkills() {
-            document.getElementById('skills-content').style.display = 'block';
-            document.getElementById('routing-content').style.display = 'none';
-            document.getElementById('btn-skills').style.cssText = 'padding: 12px 16px; border-radius: 8px; background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);';
-            document.getElementById('btn-routing').style.cssText = 'padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #94a3b8; border: none;';
-        }
-
-        function showRouting() {
-            document.getElementById('skills-content').style.display = 'none';
-            document.getElementById('routing-content').style.display = 'block';
-            document.getElementById('btn-skills').style.cssText = 'padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #94a3b8; border: none;';
-            document.getElementById('btn-routing').style.cssText = 'padding: 12px 16px; border-radius: 8px; background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);';
+        function showTab(tab) {
+            if (tab === 'skills') {
+                document.getElementById('tab-skills').style.display = 'block';
+                document.getElementById('tab-routing').style.display = 'none';
+                document.getElementById('btn-skills').style.cssText = 'padding: 12px 16px; border-radius: 8px; background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);';
+                document.getElementById('btn-routing').style.cssText = 'padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #94a3b8; border: none;';
+            } else {
+                document.getElementById('tab-skills').style.display = 'none';
+                document.getElementById('tab-routing').style.display = 'block';
+                document.getElementById('btn-skills').style.cssText = 'padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.05); color: #94a3b8; border: none;';
+                document.getElementById('btn-routing').style.cssText = 'padding: 12px 16px; border-radius: 8px; background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);';
+            }
         }
 
         function haltSystem() {
