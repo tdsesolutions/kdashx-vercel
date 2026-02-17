@@ -26,8 +26,12 @@
         .agent-business { border-left: 3px solid #3b82f6; }
         .agent-department { border-left: 3px solid #f59e0b; }
         .agent-specialist { border-left: 3px solid #10b981; }
+        .connection-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .connected { background: #4ade80; }
+        .disconnected { background: #ef4444; }
     </style>
 </head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <body>
     <!-- Sidebar -->
     <aside class="desktop-sidebar glass-card">
@@ -47,6 +51,12 @@
             <button class="nav-item" data-page="execution"><i class="fas fa-play-circle" style="width: 20px;"></i>Execution</button>
             <button class="nav-item" data-page="settings"><i class="fas fa-cog" style="width: 20px;"></i>Settings</button>
         </nav>
+        <div style="padding: 16px; border-top: 1px solid rgba(255,255,255,0.05);">
+            <div style="font-size: 12px; color: #64748b;">
+                <span id="conn-status" class="connection-status disconnected"></span>
+                <span id="conn-text">Connecting...</span>
+            </div>
+        </div>
     </aside>
 
     <!-- Mobile Nav -->
@@ -351,6 +361,70 @@
         function haltSystem() {
             if (confirm('Halt all systems?')) alert('System halted');
         }
-    </script>
+    
+        // SUPABASE CONFIG
+        const SUPABASE_URL = "https://nrmstlzmdvizsnvrjeib.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ybXN0bHptZHZpenNudnJqZWliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTA2NTEsImV4cCI6MjA4Njg2NjY1MX0.0x6FrOIEJI6cu-h9ONPbtaaxtNSs2NWB-XvNTlyTleQ";
+        let supabase = null;
+        let isConnected = false;
+        
+        async function initSupabase() {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                const { error } = await supabase.from("tasks").select("count");
+                if (error) throw error;
+                isConnected = true;
+                document.getElementById("conn-status").className = "connection-status connected";
+                document.getElementById("conn-text").textContent = "Connected";
+                loadTasks();
+                setInterval(loadTasks, 5000);
+            } catch (e) {
+                document.getElementById("conn-text").textContent = "Offline";
+            }
+        }
+        
+        async function loadTasks() {
+            if (!supabase) return;
+            const { data, error } = await supabase.from("tasks").select("*").order("submitted_at", { ascending: false }).limit(10);
+            if (!error && data && data.length > 0) {
+                let html = "";
+                data.forEach(function(t) {
+                    html += '<div style="padding: 16px; text-align: left;"><p style="color: white; margin: 0;">' + t.intent.substring(0,60) + '...</p><span style="font-size: 12px; padding: 4px 8px; border-radius: 9999px; background: rgba(255,255,255,0.1); color: #cbd5e1;">' + t.status + '</span></div>';
+                });
+                document.getElementById("tasks-list").innerHTML = html;
+            }
+        }
+        
+        async function submitTaskToSupabase(intent) {
+            if (!supabase) { alert("Not connected"); return; }
+            const task = {
+                id: "task-" + Date.now(),
+                intent: intent,
+                status: "submitted",
+                assigned_agent: "Client Services",
+                routing_method: "keyword",
+                submitted_at: new Date().toISOString(),
+                session_id: "Teddie-Scott-6732593534"
+            };
+            const { error } = await supabase.from("tasks").insert(task);
+            if (error) { alert("Error: " + error.message); return; }
+            await supabase.from("events").insert({ level: "info", source: "Dashboard", message: "Task submitted" });
+            loadTasks();
+        }
+        
+        // Override submitTask
+        submitTask = async function(e) {
+            e.preventDefault();
+            var intent = document.getElementById("intentInput").value.trim();
+            if (!intent) return;
+            await submitTaskToSupabase(intent);
+            document.getElementById("intentInput").value = "";
+            alert("Task submitted to Supabase!");
+            document.getElementById("page-intent").classList.remove("active");
+            document.getElementById("page-execution").classList.add("active");
+        };
+        
+        setTimeout(initSupabase, 1000);
+</script>
 </body>
 </html>
