@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "name": "kdashx-dashboard",
+  "routes": [
+    { "src": "/", "dest": "/index.html" }
+  ]
+}
